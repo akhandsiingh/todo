@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The backend is a Go HTTP API. It handles authentication, validates requests, applies todo business rules, reads and writes MySQL data through the sqlc query layer, and returns JSON responses to the React frontend.
+The backend is a Go HTTP API built with the Gin framework. It handles authentication, validates requests, applies todo business rules, reads and writes MySQL data through the sqlc query layer, and returns JSON responses to the React frontend.
 
 There is no Node backend in this project.
 
@@ -25,8 +25,8 @@ main.go
   -> creates repositories
   -> creates services
   -> creates controllers
-  -> registers routes
-  -> wraps routes with CORS, logging, and recovery middleware
+  -> creates a Gin router
+  -> registers routes with CORS, logging, and recovery middleware
   -> starts HTTP server on APP_PORT
 ```
 
@@ -72,7 +72,7 @@ MySQL
 
 `backend/go.mod`
 
-Defines the Go module name and backend dependency list. The backend uses Go and the MySQL driver.
+Defines the Go module name and backend dependency list. The backend uses Gin and the MySQL driver.
 
 `backend/go.sum`
 
@@ -98,7 +98,7 @@ Application entrypoint. It builds the whole backend dependency graph, runs migra
 
 ### `internal/controller`
 
-Controllers are HTTP-facing files. They decode JSON, read path/query parameters, call services, and write JSON responses.
+Controllers are Gin-facing files. They decode JSON, read path/query parameters, call services, and write JSON responses.
 
 `auth_controller.go`
 
@@ -162,7 +162,7 @@ Middleware runs before or around route handlers.
 
 `auth.go`
 
-Checks `Authorization: Bearer <token>`, verifies the JWT, and places `userID` into the request context.
+Checks `Authorization: Bearer <token>`, verifies the JWT, and places `userID` into the Gin context.
 
 `cors.go`
 
@@ -208,7 +208,7 @@ Reminder response DTO used by the API.
 
 `routes.go`
 
-Registers all HTTP paths and maps each method/path to the correct controller function. It also applies auth middleware to protected routes.
+Creates the Gin router, registers all HTTP paths, and maps each method/path to the correct controller function. It also applies auth middleware to protected routes.
 
 ### `internal/scheduler`
 
@@ -288,4 +288,3 @@ Before running, create the MySQL database:
 ```sql
 CREATE DATABASE todo_app CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
-

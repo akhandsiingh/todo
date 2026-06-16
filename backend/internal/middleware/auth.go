@@ -1,25 +1,35 @@
 package middleware
 
 import (
-    "context"
-    "net/http"
-    "strings"
-    "todo-app/backend/internal/util"
+	"strings"
+	"todo-app/backend/internal/util"
+
+	"github.com/gin-gonic/gin"
 )
 
-type contextKey string
-const UserIDKey contextKey = "userID"
+const UserIDKey = "userID"
 
-func Auth(secret string) func(http.Handler) http.Handler {
-    return func(next http.Handler) http.Handler {
-        return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-            header := r.Header.Get("Authorization")
-            if !strings.HasPrefix(header, "Bearer ") { util.Error(w, http.StatusUnauthorized, "missing bearer token"); return }
-            claims, err := util.VerifyToken(strings.TrimPrefix(header, "Bearer "), secret)
-            if err != nil { util.Error(w, http.StatusUnauthorized, "invalid token"); return }
-            next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), UserIDKey, claims.UserID)))
-        })
-    }
+func Auth(secret string) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		header := ctx.GetHeader("Authorization")
+		if !strings.HasPrefix(header, "Bearer ") {
+			util.Error(ctx, 401, "missing bearer token")
+			ctx.Abort()
+			return
+		}
+		claims, err := util.VerifyToken(strings.TrimPrefix(header, "Bearer "), secret)
+		if err != nil {
+			util.Error(ctx, 401, "invalid token")
+			ctx.Abort()
+			return
+		}
+		ctx.Set(UserIDKey, claims.UserID)
+		ctx.Next()
+	}
 }
 
-func UserID(r *http.Request) int64 { id, _ := r.Context().Value(UserIDKey).(int64); return id }
+func UserID(ctx *gin.Context) int64 {
+	id, _ := ctx.Get(UserIDKey)
+	value, _ := id.(int64)
+	return value
+}

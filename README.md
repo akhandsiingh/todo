@@ -3,7 +3,7 @@
 Full-stack todo application using only the requested stack:
 
 - Frontend: React with JavaScript and Webpack
-- Backend: Go
+- Backend: Go with Gin
 - Database: MySQL
 - ORM/query layer: sqlc-style generated Go code under `backend/internal/db/sqlc`
 

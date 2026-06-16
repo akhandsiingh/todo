@@ -1,18 +1,15 @@
 package util
 
-import (
-    "encoding/json"
-    "net/http"
-)
+import "github.com/gin-gonic/gin"
 
-type ErrorResponse struct { Error string `json:"error"` }
-
-func JSON(w http.ResponseWriter, status int, payload any) {
-    w.Header().Set("Content-Type", "application/json")
-    w.WriteHeader(status)
-    _ = json.NewEncoder(w).Encode(payload)
+type ErrorResponse struct {
+	Error string `json:"error"`
 }
 
-func Error(w http.ResponseWriter, status int, message string) { JSON(w, status, ErrorResponse{Error: message}) }
+func JSON(ctx *gin.Context, status int, payload any) { ctx.JSON(status, payload) }
 
-func Decode(r *http.Request, target any) error { return json.NewDecoder(r.Body).Decode(target) }
+func Error(ctx *gin.Context, status int, message string) {
+	JSON(ctx, status, ErrorResponse{Error: message})
+}
+
+func Decode(ctx *gin.Context, target any) error { return ctx.ShouldBindJSON(target) }

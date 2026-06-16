@@ -1,27 +1,53 @@
 package routes
 
 import (
-    "net/http"
-    "todo-app/backend/internal/controller"
-    "todo-app/backend/internal/middleware"
+	"todo-app/backend/internal/controller"
+	"todo-app/backend/internal/middleware"
+
+	"github.com/gin-gonic/gin"
 )
 
-type Controllers struct { Auth *controller.AuthController; Tasks *controller.TaskController; Groups *controller.GroupController; Reminders *controller.ReminderController }
-
-func New(c Controllers, secret string) http.Handler {
-    mux := http.NewServeMux()
-    auth := middleware.Auth(secret)
-    mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK); _, _ = w.Write([]byte("ok")) })
-    mux.HandleFunc("/api/auth/register", method(http.MethodPost, c.Auth.Register))
-    mux.HandleFunc("/api/auth/login", method(http.MethodPost, c.Auth.Login))
-    mux.Handle("/api/auth/me", auth(http.HandlerFunc(method(http.MethodGet, c.Auth.Me))))
-    mux.Handle("/api/tasks", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { if r.Method==http.MethodGet { c.Tasks.List(w,r); return }; if r.Method==http.MethodPost { c.Tasks.Create(w,r); return }; http.NotFound(w,r) })))
-    mux.Handle("/api/tasks/", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { if r.Method==http.MethodPut || r.Method==http.MethodPatch { c.Tasks.Update(w,r); return }; if r.Method==http.MethodDelete { c.Tasks.Delete(w,r); return }; http.NotFound(w,r) })))
-    mux.Handle("/api/groups", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { if r.Method==http.MethodGet { c.Groups.List(w,r); return }; if r.Method==http.MethodPost { c.Groups.Create(w,r); return }; http.NotFound(w,r) })))
-    mux.Handle("/api/groups/", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { if r.Method==http.MethodPut || r.Method==http.MethodPatch { c.Groups.Update(w,r); return }; if r.Method==http.MethodDelete { c.Groups.Delete(w,r); return }; http.NotFound(w,r) })))
-    mux.Handle("/api/reminders", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { if r.Method==http.MethodGet { c.Reminders.List(w,r); return }; if r.Method==http.MethodPost { c.Reminders.Create(w,r); return }; http.NotFound(w,r) })))
-    mux.Handle("/api/reminders/", auth(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { if r.Method==http.MethodDelete { c.Reminders.Delete(w,r); return }; http.NotFound(w,r) })))
-    return mux
+type Controllers struct {
+	Auth      *controller.AuthController
+	Tasks     *controller.TaskController
+	Groups    *controller.GroupController
+	Reminders *controller.ReminderController
 }
 
-func method(expected string, h http.HandlerFunc) http.HandlerFunc { return func(w http.ResponseWriter, r *http.Request) { if r.Method != expected { w.WriteHeader(http.StatusMethodNotAllowed); return }; h(w,r) } }
+type Config struct {
+	JWTSecret         string
+	CORSAllowedOrigin string
+}
+
+func New(c Controllers, cfg Config) *gin.Engine {
+	router := gin.New()
+	router.Use(middleware.Recovery(), middleware.Logging(), middleware.CORS(cfg.CORSAllowedOrigin))
+
+	router.GET("/health", func(ctx *gin.Context) { ctx.String(200, "ok") })
+
+	api := router.Group("/api")
+	api.POST("/auth/register", c.Auth.Register)
+	api.POST("/auth/login", c.Auth.Login)
+
+	authenticated := api.Group("")
+	authenticated.Use(middleware.Auth(cfg.JWTSecret))
+	authenticated.GET("/auth/me", c.Auth.Me)
+
+	authenticated.GET("/tasks", c.Tasks.List)
+	authenticated.POST("/tasks", c.Tasks.Create)
+	authenticated.PUT("/tasks/:id", c.Tasks.Update)
+	authenticated.PATCH("/tasks/:id", c.Tasks.Update)
+	authenticated.DELETE("/tasks/:id", c.Tasks.Delete)
+
+	authenticated.GET("/groups", c.Groups.List)
+	authenticated.POST("/groups", c.Groups.Create)
+	authenticated.PUT("/groups/:id", c.Groups.Update)
+	authenticated.PATCH("/groups/:id", c.Groups.Update)
+	authenticated.DELETE("/groups/:id", c.Groups.Delete)
+
+	authenticated.GET("/reminders", c.Reminders.List)
+	authenticated.POST("/reminders", c.Reminders.Create)
+	authenticated.DELETE("/reminders/:id", c.Reminders.Delete)
+
+	return router
+}

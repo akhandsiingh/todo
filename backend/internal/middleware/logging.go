@@ -1,15 +1,16 @@
 package middleware
 
 import (
-    "log"
-    "net/http"
-    "time"
+	"log"
+	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-func Logging(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        start := time.Now()
-        next.ServeHTTP(w, r)
-        log.Printf("%s %s %s", r.Method, r.URL.Path, time.Since(start))
-    })
+func Logging() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		start := time.Now()
+		ctx.Next()
+		log.Printf("%s %s %d %s", ctx.Request.Method, ctx.Request.URL.Path, ctx.Writer.Status(), time.Since(start))
+	}
 }
