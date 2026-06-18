@@ -10,17 +10,40 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (!token) { setLoading(false); return; }
-    authApi.me().then(setUser).catch(() => localStorage.removeItem('token')).finally(() => setLoading(false));
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    authApi
+      .me()
+      .then(setUser)
+      .catch(() => localStorage.removeItem('token'))
+      .finally(() => setLoading(false));
   }, []);
 
-  const value = useMemo(() => ({
-    user,
-    loading,
-    login: async (payload) => { const res = await authApi.login(payload); localStorage.setItem('token', res.token); setUser(res.user); return res; },
-    register: async (payload) => { const res = await authApi.register(payload); localStorage.setItem('token', res.token); setUser(res.user); return res; },
-    logout: () => { localStorage.removeItem('token'); setUser(null); }
-  }), [user, loading]);
+  const value = useMemo(
+    () => ({
+      user,
+      loading,
+      login: async (payload) => {
+        const res = await authApi.login(payload);
+        localStorage.setItem('token', res.token);
+        setUser(res.user);
+        return res;
+      },
+      register: async (payload) => {
+        const res = await authApi.register(payload);
+        localStorage.setItem('token', res.token);
+        setUser(res.user);
+        return res;
+      },
+      logout: () => {
+        localStorage.removeItem('token');
+        setUser(null);
+      },
+    }),
+    [user, loading]
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

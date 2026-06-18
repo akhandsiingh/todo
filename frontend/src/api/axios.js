@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const apiBaseUrl = window.__TODO_API_URL__ || 'http://localhost:8080/api';
+const apiBaseUrl = 'http://localhost:8080/api';
 const client = axios.create({ baseURL: apiBaseUrl });
 
 client.interceptors.request.use((config) => {

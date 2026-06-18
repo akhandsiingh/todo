@@ -12,17 +12,32 @@ import (
 
 type TaskController struct{ service *service.TaskService }
 
-func NewTaskController(s *service.TaskService) *TaskController { return &TaskController{service: s} }
+func NewTaskController(s *service.TaskService) *TaskController {
+	return &TaskController{service: s}
+}
+
 func (c *TaskController) List(ctx *gin.Context) {
 	limit, offset := util.Pagination(ctx)
 	gid, _ := strconv.ParseInt(ctx.Query("group_id"), 10, 64)
-	res, err := c.service.List(ctx.Request.Context(), middleware.UserID(ctx), ctx.Query("status"), gid, limit, offset)
+	ungrouped := ctx.Query("ungrouped") == "true" || ctx.Query("ungrouped") == "1"
+	res, err := c.service.List(
+		ctx.Request.Context(),
+		middleware.UserID(ctx),
+		ctx.Query("status"),
+		gid,
+		ungrouped,
+		limit,
+		offset,
+		ctx.Query("sort_by"),
+		ctx.Query("sort_order"),
+	)
 	if err != nil {
 		util.Error(ctx, 500, err.Error())
 		return
 	}
 	util.JSON(ctx, 200, res)
 }
+
 func (c *TaskController) Create(ctx *gin.Context) {
 	var req model.TaskRequest
 	if err := util.Decode(ctx, &req); err != nil {

@@ -7,7 +7,7 @@ import (
 )
 
 func Pagination(ctx *gin.Context) (int32, int32) {
-	limit := int32(50)
+	limit := int32(5)
 	page := int32(1)
 	if v, err := strconv.Atoi(ctx.Query("limit")); err == nil && v > 0 && v <= 100 {
 		limit = int32(v)
